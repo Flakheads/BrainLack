@@ -2,6 +2,23 @@
 
 namespace bf {
 
+	Monad::Monad(const std::vector<std::shared_ptr<Node> >& contained)
+		: modStack(false), constant(true), val(0), containedOps(contained) {
+
+		for (std::shared_ptr<Node> node : contained) {
+			if (node->modifiesStack()) {
+				modStack = true;
+			}
+			if (!node->isConstant()) {
+				constant = false;
+				val = 0;
+			}
+			if (constant) {
+				val += node->getValue();
+			}
+		}
+	}
+
 	std::shared_ptr<Node> createNilad(char brace) {
 		switch (brace) {
 			case '(':
@@ -20,7 +37,7 @@ namespace bf {
 		return std::shared_ptr<Node>(nullptr);
 	}
 
-	std::shared_ptr<Node> createMonad(char brace, std::vector<std::shared_ptr<Node> > contained) {
+	std::shared_ptr<Node> createMonad(char brace, const std::vector<std::shared_ptr<Node> >& contained) {
 		switch (brace) {
 			case '(':
 			case ')':

@@ -63,7 +63,7 @@ namespace bf {
 		std::vector<std::shared_ptr<Node> > containedOps;
 
 		protected:
-			Monad(std::vector<std::shared_ptr<Node> > contained);
+			Monad(const std::vector<std::shared_ptr<Node> >& contained);
 
 		public:
 			virtual bool modifiesStack() const { return modStack; };
