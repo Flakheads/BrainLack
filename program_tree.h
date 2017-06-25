@@ -1,6 +1,9 @@
 #ifndef __program_tree_h_
 #define __program_tree_h_
 
+#include <vector>
+#include <memory>
+
 namespace bf {
 
 	class Node {
@@ -19,6 +22,7 @@ namespace bf {
 			int getValue() const { return 1; };
 			char getOpeningBrace() const { return '('; };
 			char getClosingBrace() const { return ')'; };
+			friend std::shared_ptr<Node> createNilad(char);
 	};
 
 	class StackHeight : public Node {
@@ -29,6 +33,7 @@ namespace bf {
 			int getValue() const { return 0; };
 			char getOpeningBrace() const { return '['; };
 			char getClosingBrace() const { return ']'; };
+			friend std::shared_ptr<Node> createNilad(char);
 	};
 
 	class Pop : public Node {
@@ -39,6 +44,7 @@ namespace bf {
 			int getValue() const { return 0; };
 			char getOpeningBrace() const { return '{'; };
 			char getClosingBrace() const { return '}'; };
+			friend std::shared_ptr<Node> createNilad(char);
 	};
 
 	class StackSwap : public Node {
@@ -48,48 +54,68 @@ namespace bf {
 			int getValue() const { return 0; };
 			char getOpeningBrace() const { return '<'; };
 			char getClosingBrace() const { return '>'; };
+			friend std::shared_ptr<Node> createNilad(char);
 	};
 
 	class Monad : public Node {
+		bool modStack, constant;
+		int val;
+		std::vector<std::shared_ptr<Node> > containedOps;
+
+		protected:
+			Monad(std::vector<std::shared_ptr<Node> > contained);
+
 		public:
-			void addOperation(const Node& op);
+			virtual bool modifiesStack() const { return modStack; };
+			virtual bool isConstant() const { return constant; };
+			virtual int getValue() const { return val; };
 	};
 
 	class Push : public Monad {
 		public:
+			Push(std::vector<std::shared_ptr<Node> > contained) : Monad(contained) {};
+
 			bool modifiesStack() const { return true; };
-			bool isConstant() const;
-			int getValue() const;
 			char getOpeningBrace() const { return '('; };
 			char getClosingBrace() const { return ')'; };
+			friend std::shared_ptr<Node> createMonad(char, const std::vector<std::shared_ptr<Node> >&);
 	};
 
 	class Negative : public Monad {
 		public:
-			bool modifiesStack() const;
-			bool isConstant() const;
-			int getValue() const;
+			Negative(std::vector<std::shared_ptr<Node> > contained) : Monad(contained) {};
+
+			int getValue() const { return -Monad::getValue(); };
 			char getOpeningBrace() const { return '['; };
 			char getClosingBrace() const { return ']'; };
+			friend std::shared_ptr<Node> createMonad(char, const std::vector<std::shared_ptr<Node> >&);
 	};
 
 	class Loop : public Monad {
 		public:
-			bool modifiesStack() const;
+			Loop(std::vector<std::shared_ptr<Node> > contained) : Monad(contained) {};
+
 			bool isConstant() const { return false; };
 			// since Loop is not constant getValue() doesn't matter
 			int getValue() const { return 0; };
 			char getOpeningBrace() const { return '{'; };
 			char getClosingBrace() const { return '}'; };
+			friend std::shared_ptr<Node> createMonad(char, const std::vector<std::shared_ptr<Node> >&);
 	};
 
 	class Zero : public Monad {
 		public:
-			bool modifiesStack() const;
+			Zero(std::vector<std::shared_ptr<Node> > contained) : Monad(contained) {};
+
 			bool isConstant() const { return true; };
 			int getValue() const { return 0; };
 			char getOpeningBrace() const { return '<'; };
 			char getClosingBrace() const { return '>'; };
+			friend std::shared_ptr<Node> createMonad(char, const std::vector<std::shared_ptr<Node> >&);
 	};
+
+	std::shared_ptr<Node> createNilad(char brace);
+
+	std::shared_ptr<Node> createMonad(char brace, const std::vector<std::shared_ptr<Node> >& contained);
 }
 #endif//__program_tree_h_
