@@ -1,9 +1,11 @@
+#include <cassert>
 #include <cerrno>
 #include <cstring>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <stack>
+#include <vector>
 
 #include "program_tree.h"
 
@@ -48,6 +50,8 @@ int main(int argc, char* argv[]) {
 	unsigned char_num = 0, line_num = 1;
 	char c;
 	std::stack<Character> braces;
+	std::stack<std::vector<std::shared_ptr<bf::Node> > > prog_tree;
+	prog_tree.emplace();
 	while (src_file >> c) {
 		++char_num;
 		if (c == '#' || c == '\n') {
@@ -58,9 +62,11 @@ int main(int argc, char* argv[]) {
 			++line_num;
 		} else if (is_open_brace(c)) {
 			just_opened = true;
-			braces.push(Character(char_num, line_num, c));
+			braces.emplace(char_num, line_num, c);
+			prog_tree.emplace();
 		} else if (is_close_brace(c)) {
 			if (braces.empty()) {
+				assert(prog_tree.size() == 1);
 				std::cerr << argv[0] << ": unmatched " << c << " at line " << line_num << ", char " << char_num << std::endl;
 				break;
 			} else if (!is_matching(braces.top().brace, c)) {
@@ -68,12 +74,16 @@ int main(int argc, char* argv[]) {
 					<< braces.top().character << " and " << c << " at line " << line_num << ", char " << char_num << std::endl;
 				break;
 			}
+			assert(!braces.empty());
 			if (just_opened) {
-				std::cout << "Found " << braces.top().brace << c << " nilad at " << braces.top().line
-					<< ':' << braces.top().character << '-' << line_num << ':' << char_num << std::endl;
+				assert(prog_tree.top().empty());
+				prog_tree.pop();
+				prog_tree.top().push_back(bf::createNilad(c));
 			} else {
-				std::cout << "Found " << braces.top().brace << c << " monad at " << braces.top().line
-					<< ':' << braces.top().character << '-' << line_num << ':' << char_num << std::endl;
+				assert(!prog_tree.top().empty());
+				std::shared_ptr<bf::Node> monad = bf::createMonad(c, prog_tree.top());
+				prog_tree.pop();
+				prog_tree.top().push_back(monad);
 			}
 			braces.pop();
 			just_opened = false;
@@ -94,5 +104,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	src_file.close();
-	return the_err;
+	if (the_err) return the_err;
+	assert(prog_tree.size() == 1);
 }
