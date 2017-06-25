@@ -1,2 +1,6 @@
 # Ignore compiled program
 a.out
+*.o
+
+# Ignore text files
+*.txt
